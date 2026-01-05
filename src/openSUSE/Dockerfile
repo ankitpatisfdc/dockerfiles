@@ -126,6 +126,7 @@ RUN \
             iproute \
             iputils \
             jq \
+            just \
             kind \
             kubernetes-client \
             kustomize \

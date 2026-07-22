@@ -91,6 +91,7 @@ RUN \
             buildah \
             buildpacks-cli \
             cargo \
+            checksec \
             clang \
             clang-devel \
             cnf-bash \

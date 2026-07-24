@@ -203,6 +203,7 @@ RUN \
             xorg-x11-server-Xvfb \
             yasm \
             yt-dlp \
+            zig \
             zip \
 ;
 

@@ -1,4 +1,4 @@
-FROM opensuse/tumbleweed
+FROM --platform=linux/amd64 opensuse/tumbleweed:20260723@sha256:cfee62057a1ab443ef9542135394bd1a2d90d97c6720504294c8d9883b4e4840
 
 LABEL org.opencontainers.image.authors="Ankit Pati <contact@ankitpati.in>"
 LABEL org.opencontainers.image.description="Ultimate command-line development environment for cloud, infrastructure, backend, and frontend applications."
@@ -9,15 +9,18 @@ LABEL org.opencontainers.image.url="https://quay.io/ankitpati/tigress"
 LABEL org.opencontainers.image.vendor="Ankit Pati"
 LABEL org.opencontainers.image.version="latest"
 
+SHELL ["bash", "--login", "-o", "errexit", "-o", "nounset", "-o", "pipefail", "-c", "--"]
+
 RUN \
-    cp /usr/etc/zypp/zypp.conf.d/excludedocs.conf /etc/zypp/zypp.conf.d/excludedocs.conf && \
-    sed 's/^rpm\.install\.excludedocs = yes$/rpm.install.excludedocs = no/g' --in-place /etc/zypp/zypp.conf.d/excludedocs.conf && \
-    ( cd /etc/zypp/repos.d/ && ls | while read -r repofile; do sed -i -E 's,\bhttp://,https://,g' "$repofile"; done ) && \
-    zypper modifyrepo --enable repo-debug && \
-    zypper addrepo -fp 90 'https://ftp.gwdg.de/pub/linux/misc/packman/suse/openSUSE_Tumbleweed/' packman && \
-    zypper addrepo 'https://packages.microsoft.com/yumrepos/vscode/' vscode && \
-    zypper addrepo 'https://packages.microsoft.com/opensuse/15/prod/' microsoft-opensuse && \
-    rpm --import 'https://packages.microsoft.com/keys/microsoft.asc' && \
+    set -o errexit -o nounset -o pipefail; \
+    cp /usr/etc/zypp/zypp.conf.d/excludedocs.conf /etc/zypp/zypp.conf.d/excludedocs.conf; \
+    sed 's/^rpm\.install\.excludedocs = yes$/rpm.install.excludedocs = no/g' --in-place /etc/zypp/zypp.conf.d/excludedocs.conf; \
+    ( cd /etc/zypp/repos.d/; ls | while read -r repofile; do sed --in-place --regexp-extended 's,\bhttp://,https://,g' "$repofile"; done ); \
+    zypper modifyrepo --enable repo-debug; \
+    zypper addrepo --refresh --priority=90 'https://ftp.gwdg.de/pub/linux/misc/packman/suse/openSUSE_Tumbleweed/' packman; \
+    zypper addrepo 'https://packages.microsoft.com/yumrepos/vscode/' vscode; \
+    zypper addrepo 'https://packages.microsoft.com/opensuse/15/prod/' microsoft-opensuse; \
+    rpm --import 'https://packages.microsoft.com/keys/microsoft.asc'; \
     zypper \
         --gpg-auto-import-keys \
         --non-interactive \
@@ -26,22 +29,18 @@ RUN \
             --allow-vendor-change \
             --auto-agree-with-licenses \
             --force-resolution \
-    && \
-true
-
-RUN \
-    get_latest_packages() \
-    { \
+   ; \
+    function get_latest_packages { \
         for package_regex in "$@"; \
         do \
             zypper --no-refresh --quiet search "/^$package_regex\$/" | \
-            cut -d'|' -f2 | \
-            tr -d ' ' | \
-            grep -vE '^([+-]+|Name|)$' | \
-            sort -rV | \
-            head -n 1; \
+            cut --delimiter='|' --fields=2 | \
+            tr --delete ' ' | \
+            grep --invert-match --extended-regexp '^([+-]+|Name|)$' | \
+            sort --reverse --version-sort | \
+            head --lines=1; \
         done; \
-    } && \
+    }; \
     \
     mapfile -t versioned_packages < <(get_latest_packages \
         'java-[0-9]+-openjdk-devel' \
@@ -64,7 +63,7 @@ RUN \
         'python[0-9]+-zxcvbn' \
         'ruby[0-9.]+-rubygem-haml' \
         'xdelta[0-9]+' \
-    ) && \
+    ); \
     \
     zypper \
         --no-refresh \
@@ -77,8 +76,11 @@ RUN \
             "${versioned_packages[@]}" \
             7zip \
             ImageMagick \
+            R-base \
             ShellCheck \
             ack \
+            ant \
+            apache-ivy \
             aria2 \
             arkade \
             astyle \
@@ -143,6 +145,7 @@ RUN \
             make \
             man \
             man-pages \
+            maven \
             mergiraf \
             mesheryctl \
             mesheryctl-bash-completion \
@@ -205,104 +208,89 @@ RUN \
             yt-dlp \
             zig \
             zip \
-;
+   ; \
+    update-alternatives --get-selections | \
+        cut --delimiter=' ' --fields=1 | \
+        grep --invert-match '^ld$' | \
+        while read -r invocable; \
+        do \
+            update-alternatives --list "$invocable" | \
+            sort --reverse --version-sort | \
+            head --lines=1 | \
+            xargs update-alternatives --set "$invocable"; \
+        done \
+   ; \
+    mkdir /run/tmux; \
+    chmod 1777 /run/tmux; \
+    useradd --no-log-init -- "tigress"; \
+    brew_prefix=/home/linuxbrew/.linuxbrew; \
+    mkdir --parents -- "$brew_prefix"; \
+    chmod 0700 -- "$brew_prefix"; \
+    chown -- tigress:tigress "$brew_prefix"; \
+:
 
-RUN zypper \
-        --no-refresh \
-        --non-interactive \
-        install \
-            --allow-name-change \
-            --allow-vendor-change \
-            --auto-agree-with-licenses \
-            --force-resolution \
-            R-base \
-            ant \
-            apache-ivy \
-            maven \
-;
+USER tigress
 
-RUN update-alternatives --get-selections | \
-    cut -d' ' -f1 | \
-    grep -v '^ld$' | \
-    while read -r invocable; \
-    do \
-        update-alternatives --list "$invocable" | \
-        sort -rV | \
-        head -n 1 | \
-        xargs update-alternatives --set "$invocable"; \
-    done
-
-ARG username=tigress
-ARG brew_prefix=/home/linuxbrew/.linuxbrew
+WORKDIR /home/tigress
 
 RUN \
-    mkdir /run/tmux && \
-    chmod 1777 /run/tmux && \
-    useradd "$username" && \
-    mkdir -p "$brew_prefix" && \
-    chmod 0700 "$brew_prefix" && \
-    chown "$username:$username" "$brew_prefix" && \
-true
-
-USER $username
-
-WORKDIR /home/$username
-
-RUN \
-    git clone --depth=1 'https://gitlab.com/ankitpati/dotfiles.git' && \
-    make -C dotfiles/ install && \
-    rm -rf dotfiles/ && \
+    set -o errexit -o nounset -o pipefail; \
+    git clone --depth=1 'https://gitlab.com/ankitpati/dotfiles.git'; \
+    make --directory=dotfiles/ install; \
+    rm --force --recursive dotfiles/; \
     \
-    git clone --depth=1 'https://gitlab.com/ankitpati/scripts.git' && \
-    make -C scripts/ install && \
-    mv scripts/src/Brewfile "$HOME/Brewfile" && \
-    rm -rf scripts/ && \
+    git clone --depth=1 'https://gitlab.com/ankitpati/scripts.git'; \
+    make --directory=scripts/ install; \
+    mv scripts/src/Brewfile "$HOME/Brewfile"; \
+    rm --force --recursive scripts/; \
     \
-    mkdir -p "$HOME/.postgresql/" && \
-    cat <(curl 'https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem') \
-        <(curl 'https://truststore.pki.us-gov-west-1.rds.amazonaws.com/global/global-bundle.pem') \
-        > "$HOME/.postgresql/root.crt" && \
+    mkdir --parents -- "$HOME/.postgresql/"; \
+    cat <(curl --fail --show-error --silent 'https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem') \
+        <(curl --fail --show-error --silent 'https://truststore.pki.us-gov-west-1.rds.amazonaws.com/global/global-bundle.pem') \
+        > "$HOME/.postgresql/root.crt"; \
     \
-    curl 'https://dl.google.com/dl/cloudsdk/release/google-cloud-sdk.tar.gz' \
-        | tar xz && \
-    google-cloud-sdk/install.sh --quiet --command-completion true --path-update true && \
-    bash -lc 'gcloud components update --quiet' && \
+    curl --fail --show-error --silent 'https://dl.google.com/dl/cloudsdk/release/google-cloud-sdk.tar.gz' \
+        | tar --extract --gzip; \
+    google-cloud-sdk/install.sh --quiet --command-completion=true --path-update=true; \
+    bash --login -c 'gcloud components update --quiet'; \
     \
-    bash -l <(curl 'https://get.sdkman.io') && \
+    bash --login <(curl --fail --show-error --silent 'https://get.sdkman.io'); \
     \
-    bash -l \
-        <(curl -fsS 'https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh' \
+    bash --login \
+        <(curl --fail --show-error --silent 'https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh' \
           | perl -0pE 's/^have_sudo_access\(\) {.*?^}/have_sudo_access() { HAVE_SUDO_ACCESS=0; return 0; }/sm' \
-          | perl -0pE 's/^execute_sudo\(\) {.*?^}/execute_sudo() { ohai "\$\@"; execute "\$\@"; }/sm') && \
+          | perl -0pE 's/^execute_sudo\(\) {.*?^}/execute_sudo() { ohai "\$\@"; execute "\$\@"; }/sm'); \
     \
-    bash -lc '\
-        brew analytics off && \
-        brew developer on && \
-    true' && \
-true
+    bash --login -c '\
+        set -o errexit -o nounset -o pipefail; \
+        brew analytics off; \
+        brew developer on; \
+        brew bundle; \
+    '; \
+    \
+    bash --login -c '\
+        set -o errexit -o nounset -o pipefail; \
+        cpanm \
+            Digest::SHA \
+        ; \
+        gem install --user-install --no-format-executable \
+            csvlint \
+        ; \
+        npm install --global npm; \
+        hash -r; \
+        npm install --global \
+            eslint \
+            prettier \
+        ; \
+        sdk install \
+            gradle \
+        ; \
+        bazel version; \
+        rm \
+            Brewfile \
+        ; \
+        clean-cache; \
+    '; \
+:
 
-RUN bash -lc '\
-    brew bundle \
-&& \
-    cpanm \
-        Digest::SHA \
-&& \
-    gem install --user-install --no-format-executable \
-        csvlint \
-&& \
-    npm install --global npm && hash -r && \
-    npm install --global node && \
-    npm install --global \
-        eslint \
-        prettier \
-&& \
-    sdk install gradle \
-&& \
-    bazel version \
-&& \
-    rm \
-        Brewfile \
-&& clean-cache \
-'
-
-ENTRYPOINT ["bash", "-l"]
+ENTRYPOINT ["bash", "--login"]

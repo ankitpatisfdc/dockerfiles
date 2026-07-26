@@ -1,4 +1,4 @@
-FROM --platform=linux/amd64 opensuse/tumbleweed:20260723@sha256:cfee62057a1ab443ef9542135394bd1a2d90d97c6720504294c8d9883b4e4840
+FROM --platform=linux/amd64 opensuse/tumbleweed:20260724@sha256:4e0d51f4d0b60bd1cadd008b802f904e0182f5346801c63fc6c209cd4e90410d
 
 LABEL org.opencontainers.image.authors="Ankit Pati <contact@ankitpati.in>"
 LABEL org.opencontainers.image.description="Ultimate command-line development environment for cloud, infrastructure, backend, and frontend applications."
@@ -29,7 +29,7 @@ RUN \
             --allow-vendor-change \
             --auto-agree-with-licenses \
             --force-resolution \
-   ; \
+    ; \
     function get_latest_packages { \
         for package_regex in "$@"; \
         do \
@@ -208,7 +208,7 @@ RUN \
             yt-dlp \
             zig \
             zip \
-   ; \
+    ; \
     update-alternatives --get-selections | \
         cut --delimiter=' ' --fields=1 | \
         grep --invert-match '^ld$' | \
@@ -219,7 +219,7 @@ RUN \
             head --lines=1 | \
             xargs update-alternatives --set "$invocable"; \
         done \
-   ; \
+    ; \
     mkdir /run/tmux; \
     chmod 1777 /run/tmux; \
     useradd --no-log-init -- "tigress"; \

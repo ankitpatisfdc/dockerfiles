@@ -282,9 +282,11 @@ RUN \
             eslint \
             prettier \
         ; \
+        set +o nounset; \
         sdk install \
             gradle \
         ; \
+        set -o nounset; \
         bazel version; \
         rm \
             Brewfile \

@@ -84,6 +84,7 @@ RUN \
             aria2 \
             arkade \
             astyle \
+            b3sum \
             bash-completion \
             bat \
             bind-utils \

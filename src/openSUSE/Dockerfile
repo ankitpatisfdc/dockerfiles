@@ -223,7 +223,7 @@ RUN \
     ; \
     mkdir /run/tmux; \
     chmod 1777 /run/tmux; \
-    useradd --no-log-init -- "tigress"; \
+    useradd --no-log-init -- tigress; \
     brew_prefix=/home/linuxbrew/.linuxbrew; \
     mkdir --parents -- "$brew_prefix"; \
     chmod 0700 -- "$brew_prefix"; \

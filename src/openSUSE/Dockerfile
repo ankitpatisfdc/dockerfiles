@@ -43,6 +43,8 @@ RUN \
     }; \
     \
     mapfile -t versioned_packages < <(get_latest_packages \
+        'flux[0-9]+-cli' \
+        'flux[0-9]+-cli-bash-completion' \
         'java-[0-9]+-openjdk-devel' \
         'java-[0-9]+-openjdk-jmods' \
         'libxml[0-9]+-tools' \

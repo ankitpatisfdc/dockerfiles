@@ -157,6 +157,7 @@ RUN \
             neovim \
             nmap \
             npm-default \
+            ocaml \
             openssh \
             openssl \
             opentofu \

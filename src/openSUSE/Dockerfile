@@ -256,6 +256,7 @@ RUN \
     curl --fail --show-error --silent 'https://dl.google.com/dl/cloudsdk/release/google-cloud-sdk.tar.gz' \
         | tar --extract --gzip; \
     google-cloud-sdk/install.sh --quiet --command-completion=true --path-update=true; \
+    mv "$HOME/.bashrc.backup" "$HOME/.bashrc"; \
     bash --login -c 'gcloud components update --quiet'; \
     \
     bash --login <(curl --fail --show-error --silent 'https://get.sdkman.io'); \

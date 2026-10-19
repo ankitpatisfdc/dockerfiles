@@ -15,7 +15,7 @@ RUN \
     set -o errexit -o nounset -o pipefail; \
     cp /usr/etc/zypp/zypp.conf.d/excludedocs.conf /etc/zypp/zypp.conf.d/excludedocs.conf; \
     sed 's/^rpm\.install\.excludedocs = yes$/rpm.install.excludedocs = no/g' --in-place /etc/zypp/zypp.conf.d/excludedocs.conf; \
-    ( cd /etc/zypp/repos.d/; ls | while read -r repofile; do sed --in-place --regexp-extended 's,\bhttp://,https://,g' "$repofile"; done ); \
+    sed --in-place --regexp-extended 's,\bhttp://,https://,g' /etc/zypp/repos.d/*; \
     zypper modifyrepo --enable repo-debug; \
     zypper addrepo --refresh --priority=90 'https://ftp.gwdg.de/pub/linux/misc/packman/suse/openSUSE_Tumbleweed/' packman; \
     zypper addrepo 'https://packages.microsoft.com/yumrepos/vscode/' vscode; \

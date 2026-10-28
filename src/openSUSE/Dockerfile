@@ -110,6 +110,7 @@ RUN \
             dos2unix \
             dwarves \
             exiftool \
+            fastfetch \
             fd \
             findutils \
             flex \
